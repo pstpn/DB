@@ -106,7 +106,7 @@ def generate_timestamp():
 # Generate cards data and write to a CSV file
 def generate_cards(card_numbers: set):
     with open("./src/data/cards_data.csv", mode="w", newline="") as file:
-        writer = csv.writer(file)
+        writer = csv.writer(file, delimiter=';')
         writer.writerow(["number", "bank_id", "owner", "is_credit", "balance", "release_date"])
 
         for _ in range(card_numbers_rows):
@@ -125,7 +125,7 @@ def generate_transactions() -> set:
     unique_numbers = set()
 
     with open("./src/data/transactions_data.csv", mode="w", newline="") as file:
-        writer = csv.writer(file)
+        writer = csv.writer(file, delimiter=';')
         writer.writerow(["id", "cash_machine_id", "card_number", "type", "cash", "time"])
 
         for _ in range(transactions_rows):
@@ -152,7 +152,7 @@ def generate_transactions() -> set:
 # Generate repairers data and write to a CSV file
 def generate_repairers():
     with open("./src/data/repairers_data.csv", mode="w", newline="") as file:
-        writer = csv.writer(file)
+        writer = csv.writer(file, delimiter=';')
         writer.writerow(["full_name", "age", "country", "salary"])
 
         for _ in range(repairers_rows):
@@ -167,23 +167,35 @@ def generate_repairers():
 # Generate cash machines and write data to a CSV file
 def generate_cash_machines():
     with open("./src/data/cash_machine_data.csv", mode="w", newline="") as file:
-        writer = csv.writer(file)
+        writer = csv.writer(file, delimiter=';')
         writer.writerow(["bank_id", "repairer_id", "model", "current_cash", "mount_date"])
 
         for _ in range(cash_machine_rows):
             writer.writerow([
                 generate_bank_id(),
-                generate_repairer_id(),
                 generate_cash_machine_model(),
                 generate_current_cash(),
                 generate_date()
             ])
 
 
+# Generate help table data and write to a CSV file
+def generate_repairers_cash_machines():
+    with open("./src/data/repairers_cash_machines_data.csv", mode="w", newline="") as file:
+        writer = csv.writer(file, delimiter=';')
+        writer.writerow(["repairer_id", "cash_machine_id"])
+
+        for _ in range(cash_machine_rows):
+            writer.writerow([
+                generate_repairer_id(),
+                generate_cash_machine_id(),
+            ])
+
+
 # Generate banks data and write to a CSV file
 def generate_banks():
     with open("./src/data/banks_data.csv", mode="w", newline="") as file:
-        writer = csv.writer(file)
+        writer = csv.writer(file, delimiter=';')
         writer.writerow(["name", "owner", "is_international", "created_date"])
 
         for _ in range(bank_rows):
@@ -201,3 +213,4 @@ if __name__ == '__main__':
     generate_repairers()
     card_numbers = generate_transactions()
     generate_cards(card_numbers)
+    generate_repairers_cash_machines()
