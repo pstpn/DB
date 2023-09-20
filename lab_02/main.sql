@@ -79,7 +79,7 @@ SELECT *,
         WHEN '2018' THEN 'Wow, 5 years have passed'
         ELSE concat(CAST(abs(extract(YEAR FROM time) - extract(YEAR FROM CAST('2023-01-01' AS date)))
             AS varchar(5)), ' years ago')
-    END AS when
+    END AS delta
 FROM transactions;
 
 
@@ -101,47 +101,153 @@ ORDER BY salary;
 
 select *
 from LongestName;
+
 drop table LongestName;
 
 
--- -- 12. Инструкция SELECT, использующая вложенные коррелированные
--- -- подзапросы в качестве производных таблиц в предложении FROM.
--- SELECT 'By units' AS Criteria, ProductName as BestSelling
--- FROM Products P JOIN ( SELECT TOP 1 ProductID, SUM(Quantity) AS SQ
--- FROM [Order Details]
--- GROUP BY productID
--- ORDER BY SQ DESC ) AS OD ON OD.ProductID = P.ProductID
--- UNION
--- SELECT 'By revenue' AS Criteria, ProductName as 'Best Selling'
--- FROM Products P JOIN ( SELECT TOP 1 ProductID,
--- SUM(UnitPrice*Quantity*(1-Discount)) AS SR
--- FROM [Order Details]
--- GROUP BY ProductID
--- ORDER BY SR DESC) AS OD ON OD.ProductID = P.ProductID;
---
---
--- -- 13. Инструкция SELECT, использующая вложенные подзапросы с уровнем вложенности 3.
--- SELECT 'By units' AS Criteria, ProductName as 'Best Selling'
--- FROM Products
--- WHERE ProductID = ( SELECT ProductID
---                     FROM [Order Details]
--- GROUP BY ProductID
--- HAVING SUM(Quantity) = ( SELECT MAX(SQ)
---     FROM ( SELECT SUM(Quantity) as SQ
---     FROM [Order Details]
---     GROUP BY ProductID
---     ) AS OD
---     )
---     )
---     14. Инструкция SELECT, консолидирующая данные с помощью предложения
---                    GROUP BY, но без предложения HAVING.
--- -- Для каждого заказанного продукта категории 1 получить его цену, среднюю цену,
---                        минимальную цену и название продукта
--- SELECT P.ProductID, P.UnitPrice, P.ProductName
---     AVG(OD.UnitPrice) AS AvgPrice,
---         MIN(OD.UnitPrice) AS MinPrice,
--- FROM Products P LEFT OUTER JOIN [Order Details] OD ON OD.ProductID = P.ProductID
--- WHERE CategoryID = 1
--- GROUP BY P.productID, P.UnitPrice, P.ProductName
---
---
+-- 12. Инструкция SELECT, использующая вложенные коррелированные
+-- подзапросы в качестве производных таблиц в предложении FROM.
+SELECT *
+FROM cash_machines
+JOIN
+(
+    SELECT id
+    FROM banks
+    WHERE created_date > '2013-01-01'
+) AS banks_machines ON cash_machines.bank_id = banks_machines.id;
+
+
+-- 13. Инструкция SELECT, использующая вложенные подзапросы с уровнем вложенности 3.
+SELECT *
+FROM transactions
+WHERE transactions.cash_machine_id
+IN
+(
+    SELECT cash_machines.id
+    FROM cash_machines
+    WHERE cash_machines.current_cash >
+    (
+        SELECT avg(repairers.salary)
+        FROM repairers
+        WHERE repairers.salary BETWEEN 10000 AND
+        (
+            SELECT max(repairers.salary)
+            FROM repairers
+        )
+    )
+);
+
+
+-- 14. Инструкция SELECT, консолидирующая данные с помощью предложения
+-- GROUP BY, но без предложения HAVING.
+SELECT model, count(*)
+FROM cash_machines
+GROUP BY model;
+
+
+-- 15. Инструкция SELECT, консолидирующая данные с помощью предложения GROUP BY и предложения HAVING.
+SELECT country, count(country)
+FROM repairers
+GROUP BY country
+HAVING count(country) < 10;
+
+
+-- 16. Однострочная инструкция INSERT, выполняющая вставку в таблицу одной строки значений.
+INSERT INTO banks (name, owner, is_international, created_date)
+VALUES ('Tinkoff', 'Oleg', true, '2004-03-31');
+
+SELECT *
+FROM banks
+ORDER BY id DESC;
+
+DELETE
+FROM banks
+WHERE name = 'Tinkoff';
+
+
+-- 17. Многострочная инструкция INSERT, выполняющая вставку в таблицу
+-- результирующего набора данных вложенного подзапроса.
+INSERT INTO repairers (full_name, age, country, salary)
+SELECT full_name, age, 'Italy', salary + 20000
+FROM repairers
+WHERE salary < 50000;
+
+SELECT *
+FROM repairers
+WHERE country = 'Italy';
+
+
+-- 18. Простая инструкция UPDATE.
+SELECT *
+FROM cash_machines
+WHERE id = 13;
+
+UPDATE cash_machines
+SET current_cash = 1
+WHERE id = 13;
+
+
+-- 19. Инструкция UPDATE со скалярным подзапросом в предложении SET.
+SELECT *
+FROM repairers
+WHERE country = 'Italy';
+
+UPDATE repairers
+SET salary =
+(
+    SELECT max(salary)
+    FROM repairers
+    WHERE country = 'Brazil'
+)
+WHERE country = 'Italy';
+
+
+-- 20. Простая инструкция DELETE.
+SELECT *
+FROM cards;
+
+SELECT *
+FROM transactions
+WHERE card_number = '5016839381801631';
+
+DELETE FROM transactions
+WHERE card_number = '5016839381801631';
+
+
+-- 21. Инструкция DELETE с вложенным коррелированным подзапросом в предложении WHERE.
+SELECT *
+FROM cards;
+
+SELECT *
+FROM cards
+WHERE owner = 'Victor Jackson';
+
+DELETE FROM transactions
+WHERE transactions.card_number =
+(
+    SELECT number
+    FROM cards
+    WHERE owner = 'Victor Jackson'
+);
+
+SELECT * FROM transactions
+WHERE transactions.card_number =
+(
+    SELECT number
+    FROM cards
+    WHERE owner = 'Victor Jackson'
+);
+
+
+-- 22. Инструкция SELECT, использующая простое обобщенное табличное выражение
+WITH cte (age, salary) AS
+(
+    SELECT age, count(age), max(salary)
+    FROM repairers
+    GROUP BY age
+)
+SELECT *
+FROM cte
+WHERE age > 40;
+
+
