@@ -251,3 +251,136 @@ FROM cte
 WHERE age > 40;
 
 
+-- 23. Инструкция SELECT, использующая рекурсивное обобщенное табличное выражение
+CREATE TABLE partners
+(
+    id              serial primary key,
+    partner_bank_id int
+);
+
+SELECT *
+FROM partners;
+
+INSERT INTO partners(partner_bank_id)
+VALUES
+    (1000),
+    (92),
+    (1001),
+    (1);
+
+SELECT *
+FROM partners;
+
+WITH RECURSIVE CalcAvg (id, partner_bank_id) AS
+(
+    SELECT partners.id, partners.partner_bank_id
+    FROM partners
+    WHERE partner_bank_id = 1
+    UNION ALL
+
+    SELECT partners.id, partners.partner_bank_id
+    FROM partners
+    JOIN CalcAvg AS calc_rec ON partners.id = calc_rec.partner_bank_id
+)
+SELECT *
+FROM CalcAvg;
+
+DROP TABLE partners;
+
+
+-- 24. Оконные функции. Использование конструкций MIN/MAX/AVG OVER()
+SELECT *,
+       AVG(current_cash) OVER(PARTITION BY model) AS AvgCash,
+       MIN(current_cash) OVER(PARTITION BY model) AS MinCash,
+       MAX(current_cash) OVER(PARTITION BY model) AS MaxCash
+FROM cash_machines;
+
+
+-- 25. Оконные функции для устранения дублей
+WITH Dubl AS
+(
+    SELECT *
+    FROM banks
+
+    UNION ALL
+
+    SELECT *
+    FROM banks
+),
+DelDubl AS
+(
+    SELECT *, row_number() over (partition by id) AS num
+    FROM Dubl
+)
+SELECT *
+FROM DelDubl
+WHERE num = 1;
+
+
+-- -- **Дополнительное задание на дополнительные баллы**
+--
+-- -- Создать таблицы:
+-- -- • Table1{id: integer, var1: string, valid_from_dttm: date, valid_to_dttm: date}
+-- -- • Table2{id: integer, var2: string, valid_from_dttm: date, valid_to_dttm: date}
+-- -- Версионность в таблицах непрерывная, разрывов нет (если valid_to_dttm =
+-- -- '2018-09-05', то для следующей строки соответствующего ID valid_from_dttm =
+-- -- '2018-09-06', т.е. на день больше). Для каждого ID дата начала версионности и
+-- -- дата конца версионности в Table1 и Table2 совпадают.
+-- -- Выполнить версионное соединение двух таблиц по полю id.
+-- DROP TABLE IF EXISTS  Table_1, Table_2;
+--
+-- CREATE TABLE IF NOT EXISTS Table_1
+-- (
+--     id              int,
+--     var1            varchar(100),
+--     valid_from_dttm date,
+--     valid_to_dttm   date
+-- );
+--
+-- CREATE TABLE IF NOT EXISTS Table_2
+-- (
+--     id              int,
+--     var2            varchar(100),
+--     valid_from_dttm date,
+--     valid_to_dttm   date
+-- );
+--
+-- INSERT INTO table_1(id, var1, valid_from_dttm, valid_to_dttm)
+-- VALUES
+--     (1, 'A', '2018-09-01', '2018-09-15'),
+--     (1, 'B', '2018-09-16', '5999-12-31');
+--
+-- INSERT INTO table_2(id, var2, valid_from_dttm, valid_to_dttm)
+-- VALUES
+--     (1, 'A', '2018-09-01', '2018-09-18'),
+--     (1, 'B', '2018-09-19', '5999-12-31');
+--
+-- WITH select_all AS
+-- (
+--     SELECT *
+--     FROM table_1
+--
+--     UNION ALL
+--
+--     SELECT *
+--     FROM table_2
+-- )
+-- SELECT *
+-- FROM select_all;
+--
+--
+-- WITH ordered_dates AS
+-- (
+--     SELECT *
+--     FROM table_1
+--
+--     UNION ALL
+--
+--     SELECT *
+--     FROM table_2
+-- )
+-- SELECT *
+-- FROM ordered_dates;
+--
+-- DROP TABLE IF EXISTS table_1;
+-- DROP TABLE IF EXISTS table_2;
