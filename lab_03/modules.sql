@@ -92,7 +92,7 @@ end;
 $$ language plpgsql;
 
 call add_cash_with_transaction('Transfer');
-drop procedure add_cash_with_transaction(int);
+drop procedure add_cash_with_transaction(text);
 
 select *
 from transactions
